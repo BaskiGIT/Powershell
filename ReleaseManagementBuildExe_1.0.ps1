@@ -35,7 +35,7 @@ Test-Path -LiteralPath $RMBuildExePathFormation
 [System.IO.File]::Exists($RMBuildExePathFormation)
 <#Test-Path $RMBuildExePathFormation -IsValid
 $split
-$Artifact = "`"" + "\\icp005dd\BuildDrops\" + $BuildDefName + "\" + $BuildNumber + "`""
+$Artifact = "`"" + "\\ServerName\BuildDrops\" + $BuildDefName + "\" + $BuildNumber + "`""
 & "$RMBuildExePath\Client\bin\ReleaseManagementBuild.exe" release -rt $ReleaseTempName -pl $Artifact -ts $StageName
 #>
 #[IO.Path]::Combine($RMBuildExePathFormation, 'Client', 'bin', 'ReleaseManagementBuild.exe')
