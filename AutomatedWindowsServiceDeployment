@@ -1,6 +1,6 @@
-"`t`tScript to deploy windows service`r`n"
-"`t`tAuthor:Baskar Lingam Ramachandran`r`n"
-"`t`tCreated Date:19th Dec 2016 `r`n"
+Write-Host "`t`t`t`tScript to deploy windows service`r`n" -ForegroundColor Cyan
+Write-Host "`t`t`t`tAuthor:Baskar Lingam Ramachandran`r`n" -ForegroundColor Cyan
+Write-Host "`t`t`t`tCreated Date:19th Dec 2016 `r`n" -ForegroundColor Cyan
 
 $win_svc = Get-WmiObject win32_service | ?{$_.Name -like '*Loader*'}# | Select Name
 
@@ -15,19 +15,32 @@ function Copy-Files
         $Dest
     )
 
-    Write-Host "In the Copy Files function" -ForegroundColor Cyan
-    Write-Host "Value of src folder is " -ForegroundColor DarkGray
-    Write-Host $src -ForegroundColor DarkCyan
-    Write-Host "Value of dest folder is " -ForegroundColor DarkGray
-    Write-Host $Dest -ForegroundColor DarkCyan
+    Write-Host "`t`tIn the Copy Files function" -ForegroundColor Cyan
+    Write-Host "`t`tValue of src folder is " -ForegroundColor DarkGray
+    Write-Host "`t`t"$src -ForegroundColor DarkCyan
+    Write-Host "`t`tValue of dest folder is " -ForegroundColor DarkGray
+    Write-Host "`t`t"$Dest -ForegroundColor DarkCyan
 
+    #The below commented section allows to copy all files from the script
+    #folder. But it does not exclude the script itself. In order to exclude the script
+    #Use get-childitem and then pipe it to copy-item
+    
+    <# COMMENTED SECTION - REASON is provided above
+    
     $src_new = $src + "\\*"
-    Write-Host "Value of final source folder is " -ForegroundColor DarkGray
-    Write-Host $src_new -ForegroundColor Yellow
 
-    Copy-Item -Path $src_new -Destination $Dest -Recurse -Verbose
+    Write-Host "`t`tValue of final source folder is " -ForegroundColor DarkGray
+    Write-Host "`t`t"$src_new -ForegroundColor Yellow
 
-    Write-Host "Deployment of files is complete" -ForegroundColor DarkRed -BackgroundColor White
+    Copy-Item -Path $src_new -Destination $Dest -Recurse -Force
+
+    #>
+
+    $exclude = @('*.ps1')
+    
+    gci $src -Recurse -Exclude $exclude | Copy-Item -Destination {Join-Path $Dest $_.FullName.Substring($src.Length)}
+
+    Write-Host "`t`tDeployment of files is complete" -ForegroundColor DarkRed -BackgroundColor White
 
     return $true
 }
@@ -45,20 +58,20 @@ function Take-Backup
 
     $destFolder = $BackupPathName
 
-    Write-Host "In the backup function" -ForegroundColor Cyan
-    Write-Host "Value of source folder is " -ForegroundColor DarkGray
-    Write-Host $pathName -ForegroundColor Yellow
-    Write-Host "Value of dest folder is " -ForegroundColor DarkGray
-    Write-Host $BackupPathName -ForegroundColor Yellow
-    Write-Host "Value of dest_final folder is " -ForegroundColor DarkGray
-    Write-Host $destFolder -ForegroundColor Yellow
+    Write-Host "`t`tIn the backup function" -ForegroundColor Cyan
+    Write-Host "`t`tValue of source folder is " -ForegroundColor DarkGray
+    Write-Host "`t`t"$pathName -ForegroundColor Yellow
+    Write-Host "`t`tValue of dest folder is " -ForegroundColor DarkGray
+    Write-Host "`t`t"$BackupPathName -ForegroundColor Yellow
+    Write-Host "`t`tValue of dest_final folder is " -ForegroundColor DarkGray
+    Write-Host "`t`t"$destFolder -ForegroundColor Yellow
     $src = $pathName + "\\*"
-    Write-Host "Value of final source folder is " -ForegroundColor DarkGray
-    Write-Host $src -ForegroundColor Yellow
+    Write-Host "`t`tValue of final source folder is " -ForegroundColor DarkGray
+    Write-Host "`t`t"$src -ForegroundColor Yellow
 
-    Copy-Item -Path $src -Destination $destFolder -Recurse -Verbose
+    Copy-Item -Path $src -Destination $destFolder -Recurse -Force
 
-    Write-Host "Backup is complete" -ForegroundColor DarkRed -BackgroundColor White
+    Write-Host "`t`tBackup is complete" -ForegroundColor DarkRed -BackgroundColor White
 
     return $true
 }
@@ -74,11 +87,11 @@ function Create-BackupFolder
     if (-not(Test-Path -Path $pathToCreate))
     {
         mkdir $pathToCreate
-        Write-Host "The backup folder is created " $pathToCreate -ForegroundColor DarkGreen
+        Write-Host "`t`tThe backup folder is created " $pathToCreate -ForegroundColor DarkGreen
     }
     else
     {
-        Write-Host "The backup folder already exists " $pathToCreate -ForegroundColor DarkMagenta
+        Write-Host "`t`tThe backup folder already exists " $pathToCreate -ForegroundColor DarkMagenta
     }
 
     if (Test-Path -Path $pathToCreate)
@@ -96,15 +109,15 @@ function Create-BackupPath
     )
 
     $qual = Split-Path $path -Qualifier
-    Write-Host $qual
+    Write-Host "`t`t"$qual
 
     $noqual = Split-Path $path -NoQualifier
-    Write-Host $noqual
+    Write-Host "`t`t"$noqual
 
     $BackupPath = Join-Path $qual -ChildPath "\Backup"
     $BackupPath_1 = Join-Path $BackupPath -ChildPath $noqual
     $BackupPath_2 = Join-Path $BackupPath_1 -ChildPath (get-date -format yyyyMMddHHmm)
-    Write-Host $BackupPath_2
+    Write-Host "`t`t"$BackupPath_2
     return $BackupPath_2
 }
 
@@ -118,20 +131,20 @@ function Get-SvcPath
 
     $svcPath = Get-WmiObject win32_service | ?{$_.Name -eq $svcName}# | Select PathName
     Write-Host "`t`tPath name of the windows service is " -ForegroundColor DarkYellow -NoNewline
-    Write-Host $svcPath.PathName
-    Write-Host $svcPath.PathName.GetType()
+    Write-Host "`t`t"$svcPath.PathName
+    Write-Host "`t`t"$svcPath.PathName.GetType()
     
     #Test-Path -Path $svcPath.PathName -PathType Any
     $path1 = Split-Path $svcPath.PathName -Parent
-    Write-Host $path1
+    Write-Host "`t`t"$path1
     $path2 = Split-Path $svcPath.PathName -Leaf
-    Write-Host $path2
+    Write-Host "`t`t"$path2
     [System.IO.FileInfo]$path = Join-Path $path1.TrimStart('"') -ChildPath $path2.TrimEnd('"') -Resolve
-    Write-Host $path -ForegroundColor DarkCyan
+    Write-Host "`t`t"$path -ForegroundColor DarkCyan
     #Test-Path $path
     $newParentpath = Split-Path $path -Parent
 
-    Write-Host $newParentpath
+    Write-Host "`t`t"$newParentpath
 
     return $newParentpath
 
@@ -149,25 +162,25 @@ function Start-WinService
 
     $svc_status = (Get-Service -Name $serviceName).Status
 
-    Write-Host "`t`tThe status of the service is after copying new files is " -ForegroundColor Yellow -NoNewline
-    Write-Host $svc_status -ForegroundColor DarkYellow
+    Write-Host "`t`tThe status of the service after copying new files is " -ForegroundColor Yellow -NoNewline
+    Write-Host "`t`t"$svc_status -ForegroundColor DarkYellow
 
     Start-Service -Name $serviceName
 
-    Write-Host "Starting the windows service" "`""$serviceName"`"" -ForegroundColor DarkGray
+    Write-Host "`t`tStarting the windows service" "`""$serviceName"`"" -ForegroundColor DarkGray
     $svc_stat = (Get-Service -Name $serviceName).Status
             
-    if ($svc_stat -eq "started")
+    if ($svc_stat -eq "Running")
     {
         Write-Host "`t`tThe status of the service is " -ForegroundColor Yellow -NoNewline
-        Write-Host $svc_stat -ForegroundColor DarkYellow
+        Write-Host "`t`t"$svc_stat -ForegroundColor DarkYellow
         return $true
     }                       
     else
     {
         for ($temp_1 = 0; $temp_1 -lt 60; $temp_1++)
         {
-            if ($svc_stat -ne "started")
+            if ($svc_stat -ne "Running")
             {
                 sleep -Seconds 5
                 $new_1 = $temp_1*5
@@ -175,9 +188,9 @@ function Start-WinService
                 Write-Host "`t`tWaiting for 5 more seconds" -ForegroundColor DarkMagenta
                 Write-Host "`t`tThe status of the service after $new_1 seconds is " -ForegroundColor DarkYellow -NoNewline
                 $new_svc_stat = (Get-Service -Name $serviceName).Status
-                Write-Host $new_svc_stat -ForegroundColor DarkGreen
+                Write-Host "`t`t"$new_svc_stat -ForegroundColor DarkGreen
             }
-            elseif ($svc_stat -eq "started")
+            elseif ($svc_stat -eq "Running")
             {
                 Write-Host "`t`tThe service is started now." -ForegroundColor DarkYellow
                 return $true
@@ -204,17 +217,17 @@ function Start-Deployment
 
     $newParentpath = Get-SvcPath -svcName $svcName
 
-    Write-Host "Path from service is " $newParentpath -for Yellow
+    Write-Host "`t`tPath from service is " $newParentpath -for Yellow
 
     $Backup_path = Create-BackupPath -path $newParentpath
 
-    Write-Host "Path of BackupFolder is " $Backup_path -ForegroundColor DarkCyan
+    Write-Host "`t`tPath of BackupFolder is " $Backup_path -ForegroundColor DarkCyan
 
     $backupFolderCreatedOrNot = Create-BackupFolder -pathToCreate $Backup_path
 
     if ((Test-Path -Path $newParentpath) -and ($backupFolderCreatedOrNot -eq "true"))
     {
-        Write-Host "`t`tTHE BACKUP FOLDER IS CREATED" -ForegroundColor Cyan -BackgroundColor DarkRed
+        Write-Host "`t`tTHE BACKUP FOLDER IS CREATED" -ForegroundColor White -BackgroundColor Black
         $backupDoneOrNot = Take-Backup -pathName $newParentpath -BackupPathName $Backup_path
     }
     else
@@ -224,8 +237,8 @@ function Start-Deployment
 
     if ($backupDoneOrNot -eq "true")
     {
-        Write-Host "`t`tTHE BACKUP IS SUCCESSFUL" -ForegroundColor Cyan -BackgroundColor DarkRed
-        $deploymentDoneOrNot = Copy-Files -src $MyInvocation -Dest $newParentpath
+        Write-Host "`t`tTHE BACKUP IS SUCCESSFUL" -ForegroundColor White -BackgroundColor Black
+        $deploymentDoneOrNot = Copy-Files -src $PSScriptRoot -Dest $newParentpath
     }
     else
     {
@@ -234,7 +247,7 @@ function Start-Deployment
 
     if ($deploymentDoneOrNot -eq "true")
     {
-        Write-Host "`t`tTHE COPYING OF NEW FILES IS SUCCESSFUL" -ForegroundColor Cyan -BackgroundColor DarkRed
+        Write-Host "`t`tTHE COPYING OF NEW FILES IS SUCCESSFUL" -ForegroundColor White -BackgroundColor Black
         $ServiceStartedOrNot = Start-WinService -serviceName $svcName
     }
     else
@@ -244,7 +257,7 @@ function Start-Deployment
 
     if ($ServiceStartedOrNot -eq "true")
     {
-        Write-Host "`t`tTHE DEPLOYMENT IS SUCCESSFUL" -ForegroundColor Cyan -BackgroundColor DarkRed
+        Write-Host "`t`tTHE DEPLOYMENT IS SUCCESSFUL" -ForegroundColor White -BackgroundColor Black
     }
     else
     {
@@ -262,10 +275,10 @@ function Stop-WinService
 
         [Parameter(Mandatory, ParameterSetName = 'ByManual')]
         [ValidateScript({
-            Write-Host $_            
+            Write-Host "`t`t"$_            
             if (Get-Service -Name $_)            
             {
-                Write-Host "In True"
+                Write-Host "`t`tIn True"
                 $true
             }
             else
@@ -282,7 +295,7 @@ function Stop-WinService
     {
         if (($CanProceed -eq 'true') -or ($CanProceed -eq 'yes') -or ($CanProceed -eq '0'))
         {
-            Write-Host "Stopping the windows service" "`""$win_svc.Name"`"" -ForegroundColor DarkGray
+            Write-Host "`t`tStopping the windows service" "`""$win_svc.Name"`"" -ForegroundColor DarkGray
             Stop-Service $win_svc.Name
             
             $status = (Get-Service -Name $win_svc.Name).Status
@@ -290,7 +303,7 @@ function Stop-WinService
             if ($status -eq "stopped")
             {
                 Write-Host "`t`tThe status of the service is " -ForegroundColor Yellow -NoNewline
-                Write-Host $status -ForegroundColor DarkYellow
+                Write-Host "`t`t"$status -ForegroundColor DarkYellow
                 Start-Deployment -svcName $win_svc.Name
             }
             
@@ -306,7 +319,7 @@ function Stop-WinService
                         Write-Host "`t`tWaiting for 5 more seconds" -ForegroundColor DarkMagenta
                         Write-Host "`t`tThe status of the service after $new seconds is " -ForegroundColor DarkYellow -NoNewline
                         $new_status = (Get-Service -Name $win_svc.Name).Status
-                        Write-Host $new_status -ForegroundColor DarkGreen
+                        Write-Host "`t`t"$new_status -ForegroundColor DarkGreen
                     }
                     elseif ($status -eq "stopped")
                     {
@@ -328,8 +341,8 @@ function Stop-WinService
         else
         {
             Write-Host "`t`tYou have decided not to stop the service " -ForegroundColor Cyan -NoNewline
-            Write-Host $win_svc.Name -ForegroundColor DarkCyan -NoNewline
-            Write-Host ".Exiting the execution" -ForegroundColor Cyan
+            Write-Host "`t`t"$win_svc.Name -ForegroundColor DarkCyan -NoNewline
+            Write-Host "`t`t.Exiting the execution" -ForegroundColor Cyan
             Exit
         }
     }
@@ -338,14 +351,14 @@ function Stop-WinService
     {
         Stop-Service -Name $name
 
-        Write-Host "Stopping the windows service" "`""$name"`"" -ForegroundColor DarkGray
+        Write-Host "`t`tStopping the windows service" "`""$name"`"" -ForegroundColor DarkGray
         Stop-Service $name
         $status = (Get-Service -Name $name).Status
             
         if ($status -eq "stopped")
         {
             Write-Host "`t`tThe status of the service is " -ForegroundColor Yellow -NoNewline
-            Write-Host $status -ForegroundColor DarkYellow
+            Write-Host "`t`t"$status -ForegroundColor DarkYellow
             Start-Deployment -svcName $name
         }                       
         else
@@ -360,7 +373,7 @@ function Stop-WinService
                     Write-Host "`t`tWaiting for 5 more seconds" -ForegroundColor DarkMagenta
                     Write-Host "`t`tThe status of the service after $new seconds is " -ForegroundColor DarkYellow -NoNewline
                     $new_status = (Get-Service -Name $name).Status
-                    Write-Host $new_status -ForegroundColor DarkGreen
+                    Write-Host "`t`t"$new_status -ForegroundColor DarkGreen
                 }
                 elseif ($status -eq "stopped")
                 {
@@ -395,8 +408,8 @@ if ($win_svc.Name.Count -gt 1)
 elseif ($win_svc.Name.Count -eq 1)
 {
     Write-Host "`t`tScript has detected that the service with the name " -ForegroundColor Cyan -NoNewline
-    Write-Host $win_svc.Name -ForegroundColor DarkCyan -NoNewline
-    Write-Host " exists" -ForegroundColor Cyan
+    Write-Host "`t`t"$win_svc.Name -ForegroundColor DarkCyan -NoNewline
+    Write-Host "`t`t exists" -ForegroundColor Cyan
     Write-Host "`t`tEnter either 0 or true or yes to continue stopping the service" -ForegroundColor DarkGray
     Write-Host "`t`tOr enter either 1 or false or no to stop the execution of the script" -ForegroundColor DarkGray
     $option = Read-Host "Please enter your option"
