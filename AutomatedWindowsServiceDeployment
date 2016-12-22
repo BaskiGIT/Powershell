@@ -20,6 +20,16 @@ function Copy-Files
     Write-Host $src -ForegroundColor DarkCyan
     Write-Host "Value of dest folder is " -ForegroundColor DarkGray
     Write-Host $Dest -ForegroundColor DarkCyan
+
+    $src_new = $src + "\\*"
+    Write-Host "Value of final source folder is " -ForegroundColor DarkGray
+    Write-Host $src_new -ForegroundColor Yellow
+
+    Copy-Item -Path $src_new -Destination $Dest -Recurse -Verbose
+
+    Write-Host "Deployment of files is complete" -ForegroundColor DarkRed -BackgroundColor White
+
+    return $true
 }
 
 function Take-Backup
@@ -129,6 +139,61 @@ function Get-SvcPath
 
 }
 
+function Start-WinService
+{
+    [cmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $serviceName
+    )
+
+    $svc_status = (Get-Service -Name $serviceName).Status
+
+    Write-Host "`t`tThe status of the service is after copying new files is " -ForegroundColor Yellow -NoNewline
+    Write-Host $svc_status -ForegroundColor DarkYellow
+
+    Start-Service -Name $serviceName
+
+    Write-Host "Starting the windows service" "`""$serviceName"`"" -ForegroundColor DarkGray
+    $svc_stat = (Get-Service -Name $serviceName).Status
+            
+    if ($svc_stat -eq "started")
+    {
+        Write-Host "`t`tThe status of the service is " -ForegroundColor Yellow -NoNewline
+        Write-Host $svc_stat -ForegroundColor DarkYellow
+        return $true
+    }                       
+    else
+    {
+        for ($temp_1 = 0; $temp_1 -lt 60; $temp_1++)
+        {
+            if ($svc_stat -ne "started")
+            {
+                sleep -Seconds 5
+                $new_1 = $temp_1*5
+                Write-Host "`t`tThe windows service is not yet started." -ForegroundColor DarkGray
+                Write-Host "`t`tWaiting for 5 more seconds" -ForegroundColor DarkMagenta
+                Write-Host "`t`tThe status of the service after $new_1 seconds is " -ForegroundColor DarkYellow -NoNewline
+                $new_svc_stat = (Get-Service -Name $serviceName).Status
+                Write-Host $new_svc_stat -ForegroundColor DarkGreen
+            }
+            elseif ($svc_stat -eq "started")
+            {
+                Write-Host "`t`tThe service is started now." -ForegroundColor DarkYellow
+                return $true
+            }
+            if ($temp_1 -eq 59)
+            {
+                Write-Host "`t`tIt is been 5 minutes from the time the script have tried to start the service." -Foregroundcolor DarkRed
+                Write-Host "`t`tBut it is still not started. Please check with Build and Deployment team." -Foregroundcolor DarkYellow
+                Write-Host "`t`tExiting." -Foregroundcolor DarkBlue
+                return $false
+            }                
+        }
+    }
+
+}
+
 function Start-Deployment
 {
     [cmdletBinding()]
@@ -145,10 +210,11 @@ function Start-Deployment
 
     Write-Host "Path of BackupFolder is " $Backup_path -ForegroundColor DarkCyan
 
-    $pathCreatedOrNot = Create-BackupFolder -pathToCreate $Backup_path
+    $backupFolderCreatedOrNot = Create-BackupFolder -pathToCreate $Backup_path
 
-    if ((Test-Path -Path $newParentpath) -and ($pathCreatedOrNot -eq "true"))
+    if ((Test-Path -Path $newParentpath) -and ($backupFolderCreatedOrNot -eq "true"))
     {
+        Write-Host "`t`tTHE BACKUP FOLDER IS CREATED" -ForegroundColor Cyan -BackgroundColor DarkRed
         $backupDoneOrNot = Take-Backup -pathName $newParentpath -BackupPathName $Backup_path
     }
     else
@@ -158,7 +224,31 @@ function Start-Deployment
 
     if ($backupDoneOrNot -eq "true")
     {
-        Copy-Files -src $MyInvocation -Dest $newParentpath
+        Write-Host "`t`tTHE BACKUP IS SUCCESSFUL" -ForegroundColor Cyan -BackgroundColor DarkRed
+        $deploymentDoneOrNot = Copy-Files -src $MyInvocation -Dest $newParentpath
+    }
+    else
+    {
+        Write-Error "`t`tThere is error in taking the backup of the windows services files. Please look into it"
+    }
+
+    if ($deploymentDoneOrNot -eq "true")
+    {
+        Write-Host "`t`tTHE COPYING OF NEW FILES IS SUCCESSFUL" -ForegroundColor Cyan -BackgroundColor DarkRed
+        $ServiceStartedOrNot = Start-WinService -serviceName $svcName
+    }
+    else
+    {
+        Write-Error "`t`tThere is error in copying th enew windows services files. Please look into it"
+    }
+
+    if ($ServiceStartedOrNot -eq "true")
+    {
+        Write-Host "`t`tTHE DEPLOYMENT IS SUCCESSFUL" -ForegroundColor Cyan -BackgroundColor DarkRed
+    }
+    else
+    {
+        Write-Error "`t`tThis is critical ! There is error in starting the windows service after the deployment. Please look into it"
     }
 }
 
@@ -312,3 +402,6 @@ elseif ($win_svc.Name.Count -eq 1)
     $option = Read-Host "Please enter your option"
     Stop-WinService -CanProceed $option
 }
+
+
+
