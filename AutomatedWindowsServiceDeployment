@@ -2,8 +2,6 @@ Write-Host "`t`t`t`tScript to deploy windows service`r`n" -ForegroundColor Cyan
 Write-Host "`t`t`t`tAuthor:Baskar Lingam Ramachandran`r`n" -ForegroundColor Cyan
 Write-Host "`t`t`t`tCreated Date:19th Dec 2016 `r`n" -ForegroundColor Cyan
 
-$win_svc = Get-WmiObject win32_service | ?{$_.Name -like '*Loader*'}# | Select Name
-
 function Copy-Files
 {
     [cmdletBinding()]
@@ -187,8 +185,8 @@ function Start-WinService
                 Write-Host "`t`tThe windows service is not yet started." -ForegroundColor DarkGray
                 Write-Host "`t`tWaiting for 5 more seconds" -ForegroundColor DarkMagenta
                 Write-Host "`t`tThe status of the service after $new_1 seconds is " -ForegroundColor DarkYellow -NoNewline
-                $new_svc_stat = (Get-Service -Name $serviceName).Status
-                Write-Host "`t`t"$new_svc_stat -ForegroundColor DarkGreen
+                $svc_stat = (Get-Service -Name $serviceName).Status
+                Write-Host "`t`t"$svc_stat -ForegroundColor DarkGreen
             }
             elseif ($svc_stat -eq "Running")
             {
@@ -318,13 +316,13 @@ function Stop-WinService
                         Write-Host "`t`tThe windows service is not yet stopped." -ForegroundColor DarkGray
                         Write-Host "`t`tWaiting for 5 more seconds" -ForegroundColor DarkMagenta
                         Write-Host "`t`tThe status of the service after $new seconds is " -ForegroundColor DarkYellow -NoNewline
-                        $new_status = (Get-Service -Name $win_svc.Name).Status
-                        Write-Host "`t`t"$new_status -ForegroundColor DarkGreen
+                        $status = (Get-Service -Name $win_svc.Name).Status
+                        Write-Host "`t`t"$status -ForegroundColor DarkGreen
                     }
                     elseif ($status -eq "stopped")
                     {
                         Write-Host "`t`tThe service is stopped now." -ForegroundColor DarkYellow
-                        Continue
+                        Break
                     }
                     if ($temp -eq 59)
                     {
@@ -378,7 +376,7 @@ function Stop-WinService
                 elseif ($status -eq "stopped")
                 {
                     Write-Host "`t`tThe service is stopped now." -ForegroundColor DarkYellow
-                    Continue
+                    Break
                 }
                 if ($temp -eq 59)
                 {
@@ -386,7 +384,7 @@ function Stop-WinService
                     Write-Host "`t`tPlease check the service status manually." -Foregroundcolor DarkYellow
                     Write-Host "`t`tExiting." -Foregroundcolor DarkBlue
                     Exit
-                }                
+                }
             }
             Start-Deployment -svcName $name
         }
@@ -394,27 +392,97 @@ function Stop-WinService
     }
 }
 
-if ($win_svc.Name.Count -gt 1)
+function Get-WinServiceName
 {
-    Write-Warning "`t`tThere are more than 1 windows service detected by the script`r`nYou need to enter the service name manually"
-    Write-Host "`t`tThe windows services detected are:`r`n"
-    foreach ($svc in $win_svc.Name)
+    $win_svc = Get-WmiObject win32_service | ?{$_.Name -like '*Loader*'}
+    if ($win_svc.Name.Count -gt 1)
     {
-        Write-Host "`t`tService Name : `t`t" $svc        
+        Write-Warning "`t`tThere are more than 1 windows service detected by the script`r`nYou need to enter the service name manually"
+        Write-Host "`t`tThe windows services detected are:`r`n"
+        foreach ($svc in $win_svc.Name)
+        {
+            Write-Host "`t`tService Name : `t`t" $svc        
+        }
+        $name = Read-Host "`t`tEnter the service name to stop:`r`n"
+        Stop-WinService -name $name
     }
-    $name = Read-Host "`t`tEnter the service name to stop:`r`n"
-    Stop-WinService -name $name
-}
-elseif ($win_svc.Name.Count -eq 1)
-{
-    Write-Host "`t`tScript has detected that the service with the name " -ForegroundColor Cyan -NoNewline
-    Write-Host "`t`t"$win_svc.Name -ForegroundColor DarkCyan -NoNewline
-    Write-Host "`t`t exists" -ForegroundColor Cyan
-    Write-Host "`t`tEnter either 0 or true or yes to continue stopping the service" -ForegroundColor DarkGray
-    Write-Host "`t`tOr enter either 1 or false or no to stop the execution of the script" -ForegroundColor DarkGray
-    $option = Read-Host "Please enter your option"
-    Stop-WinService -CanProceed $option
+    elseif ($win_svc.Name.Count -eq 1)
+    {
+        Write-Host "`t`tScript has detected that the service with the name " -ForegroundColor Cyan -NoNewline
+        Write-Host "`t`t"$win_svc.Name -ForegroundColor DarkCyan -NoNewline
+        Write-Host "`t`t exists" -ForegroundColor Cyan
+        Write-Host "`t`tEnter either 0 or true or yes to continue stopping the service" -ForegroundColor DarkGray
+        Write-Host "`t`tOr enter either 1 or false or no to stop the execution of the script" -ForegroundColor DarkGray
+        $option = Read-Host "Please enter your option"
+        Stop-WinService -CanProceed $option
+    }
 }
 
+function Get-ActiveJobsCount
+{
+    [cmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $ServerName,
+
+        [Parameter(Mandatory)]
+        $DBName
+    )
+
+    [string] $SqlQuery= $("select count(*) from Staging.Loadingtask where Runstatus <> 3")
+
+    $count = Invoke-Sqlcmd -Query $UserSqlQuery -ServerInstance $ServerName -Database $DBName
+      
+    return $count.Column1
+}
+
+function Initiate-Deployment
+{
+
+    Write-Host "`t`tGetting the count of the active tasks run by Loader service" -ForegroundColor DarkGreen -BackgroundColor White
+    $DBServerName = Read-Host "Enter the Database Server Name"
+    Write-Host "`t`tDB Server Name given is" -ForegroundColor Cyan 
+    $DB_name = Read-Host "Enter the Database Name"
+    Write-Host "`t`tDB Name given is" -ForegroundColor Cyan
+
+    $count_value = Get-ActiveJobsCount -ServerName $DBServerName -DBName $DB_name
+    
+    if ($count_value -eq 0)
+    {
+        Get-WinServiceName
+    }
+    else
+    {
+        for ($temp_2 = 1; $temp_2 -lt 60; $temp_2++)
+        {
+            if ($count_value -ne 0)
+            {
+                sleep -Seconds 2
+                $new_2 = $temp_2*2
+                Write-Host "`t`tThe count is not 0 but $count_value" -ForegroundColor DarkGray
+                Write-Host "`t`tWaiting for 2 more seconds" -ForegroundColor DarkMagenta
+                Write-Host "`t`tThe number of active tasks after $new_2 seconds is " -ForegroundColor DarkYellow -NoNewline
+                $count_value = Get-ActiveJobsCount -ServerName $DBServerName -DBName $DB_name
+                Write-Host "`t`t"$count_value -ForegroundColor DarkGreen
+            }
+            else
+            {
+                Write-Host "`t`tThere are no active tasks anymore. The service can be stopped now" -ForegroundColor DarkYellow
+                Get-WinServiceName
+            }
+            if ($temp_2 -eq 59)
+            {
+                Write-Host "`t`tIt is been 2 minutes." -Foregroundcolor DarkRed
+                Write-Host "`t`tBut there are still active jobs running. Please retry now or after some time." -Foregroundcolor DarkYellow
+                Write-Host "`t`tExiting." -Foregroundcolor DarkBlue
+                Exit
+            }                
+        }
+    }
+}
+
+
+
+Initiate-Deployment
 
 
