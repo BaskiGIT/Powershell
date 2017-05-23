@@ -1,0 +1,51 @@
+{
+  "id": "b7cda5c5-ac38-4b34-8574-cc81bb5df4dd",
+  "name": "ReplaceText",
+  "friendlyName": "Replace Text",
+  "description": "Replace a text with another text in any type of file readable by .net framework",
+  "author": "Baskar Lingam Ramachandran",
+  "helpMarkDown": "Use this task to replace text with another text in any kind of file readable by .net framework",
+  "category": "Utility",
+  "visibility": [
+    "Release",
+	"Build"
+  ],
+  "demands": [],
+  "version": {
+    "Major": "1",
+    "Minor": "0",
+    "Patch": "27"
+  },
+  "minimumAgentVersion": "1.95.0",
+  "instanceNameFormat": "Replace Text",
+  "groups": [
+    {
+      "name": "advanced",
+      "displayName": "Advanced",
+      "isExpanded": true
+    }
+  ],
+  "inputs": [
+    {
+      "name": "PathToFile",
+      "type": "string",
+      "label": "Path to the file (including the file name)",
+      "required": true,
+      "defaultValue": "F:\\Path\\To\\File.config"	  
+    },
+    {
+      "name": "TextToReplace",
+      "type": "multiLine",
+      "label": "TextFrom:TextTo",
+      "required": true,
+      "defaultValue": "Variable:Value",
+	  "helpMarkDown": "In each line enter values in the format Text:ReplaceText. For ex, use Var1:Value1 to replace all Var1 with Value1. No delimiter between lines"
+    }
+  ],
+  "execution": {
+        "PowerShell3": {
+            "target": "$(currentDirectory)\\task.ps1",
+            "workingDirectory": "$(currentDirectory)"
+        }
+    }
+}
