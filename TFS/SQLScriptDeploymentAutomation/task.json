@@ -30,7 +30,7 @@
       "type": "string",
       "label": "Database Server Name",
       "required": true,
-      "defaultValue": "IDB007DD<ChangeThisAsNeeded>"
+      "defaultValue": "<ChangeThisAsNeeded>"
     },
     {
       "name": "DBName",
