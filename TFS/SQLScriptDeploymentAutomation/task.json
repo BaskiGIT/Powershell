@@ -1,0 +1,83 @@
+{
+  "id": "a19c9a5d-0c50-47f9-a366-619265bc726d",
+  "name": "ExecuteSQLScriptsWithOutput",
+  "friendlyName": "Execute single or multiple SQL script with Output",
+  "description": "Execute SQL script/s with their output written in a .txt file",
+  "author": "Baskar Lingam Ramachandran",
+  "helpMarkDown": "Execute SQL scripts on the server and produce Output in a folder",
+  "category": "Utility",
+  "visibility": [
+    "Release"
+  ],
+  "demands": [],
+  "version": {
+    "Major": "1",
+    "Minor": "0",
+    "Patch": "13"
+  },
+  "minimumAgentVersion": "1.95.0",
+  "instanceNameFormat": "Execute SQL script/s with Output",
+  "groups": [
+    {
+      "name": "advanced",
+      "displayName": "Advanced",
+      "isExpanded": true
+    }
+  ],
+  "inputs": [
+    {
+      "name": "DBServerName",
+      "type": "string",
+      "label": "Database Server Name",
+      "required": true,
+      "defaultValue": "IDB007DD<ChangeThisAsNeeded>"
+    },
+    {
+      "name": "DBName",
+      "type": "string",
+      "label": "Database Name",
+      "required": true,
+      "defaultValue": "DBName",
+      "helpMarkDown": "Name of the Database"
+    },
+    {
+      "name": "ScriptPath",
+      "type": "filePath",
+      "label": "SQL script file path",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "The path to the folder where SQL Script files are present. If you need to execute a single sql script give the full path to the file including the file name."
+    },
+    {
+      "name": "OutputPath",
+      "type": "filePath",
+      "label": "Output file of SQL script execution",
+      "helpMarkDown": "The folder where output files are present. Even if you give the full path to an output file name the output will be of the format SqlScript.sql.txt",
+      "required": true,
+      "defaultValue": ""
+    },
+	{
+      "name": "ShowOutput",
+      "type": "boolean",
+      "label": "Show Output?",
+      "defaultValue": "false",
+      "required": true,
+      "helpMarkDown": "Whether to show or not the output of SQL scripts execution"
+    },
+    {
+      "name": "RunAsUser",
+      "type": "string",
+      "label": "Run As User",
+      "helpMarkDown": "The user under which the sql script should be run under",
+      "required": true,
+      "defaultValue": "domain\\accountName",
+      "groupName": "advanced"
+    }
+  ],
+  "execution": {
+        "PowerShell3": {
+            "target": "$(currentDirectory)\\task.ps1",
+            "workingDirectory": "$(currentDirectory)"
+        }
+    }
+}
